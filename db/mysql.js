@@ -16,38 +16,34 @@ let pool  = mysql.createPool({
  * @param sql
  * @param values
  */
-let query = (sql, values)=>{
+function exec(sql, values){
     return new Promise((resolve, reject)=>{
         pool.getConnection(function(err, connection) {
             if (err){
                reject({
-                   code: 0,
+                   code: 500,
                    msg: '连接数据库失败',
                    data: err
                })
+               return
             }
 
             // 数据库已经连接
             connection.query(sql, values, function (error, results, fields) {
-                // 关闭连接池
-                connection.release();
+                // 关闭连接池        
                 if (error){
-                    reject({
-                        code: 0,
-                        msg: '查询语句错误',
-                        data: error
-                    })
+                    reject(error)          
+                    return         
                 }
-
+                connection.release();
                 // 返回数据库的执行结果
-                resolve({
-                    code: 1,
-                    msg: '操作成功',
-                    data: results
-                })
+                resolve(results)
             });
         });
     });
 };
 
-module.exports = query;
+
+module.exports = {
+    exec
+}
