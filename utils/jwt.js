@@ -1,11 +1,16 @@
 const jwt = require('jsonwebtoken');
-import config from "./../config/baseConfig"
+const config = require("./../config/baseConfig")
 
 function sign(payload) {
     return jwt.sign(payload, config.TOKEN_KEY, {
-        expiresIn: 600 //单位是秒
+        // expiresIn: 864000 //单位是秒
+        expiresIn: 7200 //单位是秒
     });
 }
+function signback(payload){
+    return jwt.verify(payload, config.TOKEN_KEY);
+}
+
 
 // mustAdmin 是否必须是管理员才能访问
 let verify = (mustAdmin) => (req, res, next) => {
@@ -42,5 +47,6 @@ let verify = (mustAdmin) => (req, res, next) => {
 
 module.exports = {
     sign,
+    signback,
     verify
 };

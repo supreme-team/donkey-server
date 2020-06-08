@@ -1,21 +1,23 @@
 // 1. 引入模块
+// import config from "./config/baseConfig";
+
 const createError = require('http-errors');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const cookieParser = require('cookie-parser');
-import bodyParser from 'body-parser'
+const bodyParser = require('body-parser')
 const logger = require('morgan');
 const nunjucks = require('nunjucks'); // 引入模板引擎
+const jwt = require('jsonwebtoken');
 
 // 2. 引入路由
 
-const indexRouter = require('./routes/index');
+const websiteRouter = require('./routes/website');
 const userRouter = require('./routes/user');
-const categoryRouter = require('./routes/category');
-const activityRouter = require('./routes/activity');
-const evaluateRouter = require('./routes/evaluate');
-const orderRouter = require('./routes/order');
+const tableRouter = require('./routes/table');
+const tableUploadRouter = require('./routes/tableUpload');
+const websiteUploadRouter = require('./routes/websiteUpload');
 
 //  引入session
 const session = require('express-session');
@@ -42,12 +44,43 @@ app.all("*", function(req, res, next) {
   if (!req.get("Origin")) return next();
   // use "*" here to accept any origin
   res.set("Access-Control-Allow-Origin","*");
-  res.set("Access-Control-Allow-Methods", "GET");
-  res.set("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
+  res.set("Access-Control-Allow-Methods", "DELETE,PUT,POST,GET,OPTION");
+  res.set("Access-Control-Allow-Headers", "X-Requested-With, Content-Type,authorization");
   // res.set('Access-Control-Allow-Max-Age', 3600);
-  if ("OPTIONS" === req.method) return res.sendStatus(200);
-  next();
+  // if ("OPTIONS" === req.method) return res.sendStatus(200);
+  // next();
+    if (req.method.toLowerCase() === 'options')
+        res.send(200);  //让options尝试请求快速结束
+    else
+        next();
 });
+
+//配置token拦截、验证
+app.all('/api/*',function (req, res, next) {
+  if(req.url==='/api/user/adminLogin'){
+    next();
+  }else{
+    let jwtToken = req.headers.authorization;
+    jwt.verify(jwtToken, baseConfig.TOKEN_KEY, async (err, payload)=>{
+      // console.log(err)
+      if(err){
+        if (err.name === 'TokenExpiredError') {
+          res.status(401).send({message:'token已经过期'});
+        } else {
+          res.status(401).send({message:'token已经失效'});
+        }
+      }else{
+        let Token = payload
+        if(Token){
+          next();
+        }else{
+          res.status(401).send({message:'token已经过期'});
+        }
+      }
+    });
+  }
+})
+
 
 // 4. 设置模板引擎
 app.set('views', path.join(__dirname, 'views'));
@@ -63,10 +96,10 @@ app.use(logger('dev'));
 // app.use(bodyParser.json({}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'public/web')));
+//设置静态资源的路径
+app.use(express.static(path.join(__dirname, 'public/dist')));
+
 
 // 中间件使用session
 app.use(session({
@@ -81,12 +114,13 @@ app.use(session({
 }));
 
 // 6. 使用路由中间件
-app.use('/api',indexRouter);
 app.use('/api/user',userRouter);
-app.use('/api/category',categoryRouter);
-app.use('/api/activity',activityRouter);
-app.use('/api/evaluate',evaluateRouter);
-app.use('/api/order',orderRouter);
+app.use('/api/table',tableRouter);
+app.use('/api/website',websiteRouter);
+app.use('/api/tableUpload',tableUploadRouter);
+app.use('/api/websiteUpload',websiteUploadRouter);
+
+
 
 
 

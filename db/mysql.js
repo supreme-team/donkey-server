@@ -7,7 +7,8 @@ let pool  = mysql.createPool({
     host: baseConfig.database.HOST,
     user: baseConfig.database.USER,
     password: baseConfig.database.PASSWORD,
-    database: baseConfig.database.DATABASE
+    database: baseConfig.database.DATABASE,
+    // multipleStatements: true
 });
 
 
@@ -16,7 +17,7 @@ let pool  = mysql.createPool({
  * @param sql
  * @param values
  */
-function exec(sql, values){
+function Query(sql, values){
     return new Promise((resolve, reject)=>{
         pool.getConnection(function(err, connection) {
             if (err){
@@ -30,10 +31,10 @@ function exec(sql, values){
 
             // 数据库已经连接
             connection.query(sql, values, function (error, results, fields) {
-                // 关闭连接池        
+                // 关闭连接池
                 if (error){
-                    reject(error)          
-                    return         
+                    reject(error)
+                    return
                 }
                 connection.release();
                 // 返回数据库的执行结果
@@ -45,5 +46,5 @@ function exec(sql, values){
 
 
 module.exports = {
-    exec
+    Query
 }
